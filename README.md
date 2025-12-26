@@ -1,5 +1,5 @@
-![RustyJob banner](https://hc-cdn.hel1.your-objectstorage.com/s/v3/dde9bf34bfd66da9_rustyjob_banner.png)
 # RustyJob - the local distributed task scheduler
+![RustyJob banner](https://hc-cdn.hel1.your-objectstorage.com/s/v3/dde9bf34bfd66da9_rustyjob_banner.png)
 RustyJob is a lightweight local-first distributed task scheduler written in Rust. It allows you to schedule and manage tasks across you single maschine or multiple maschines in a local network or even over the interner.
 
 ## Features
