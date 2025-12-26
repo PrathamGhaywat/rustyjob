@@ -7,6 +7,7 @@ pub struct Storage {
     db: sled::Db,
     tasks: sled::Tree,
     logs: sled::Tree,
+    names: sled::Tree,
 }
 
 impl Storage {
@@ -14,13 +15,15 @@ impl Storage {
         let db = sled::open(path)?;
         let tasks = db.open_tree("tasks")?;
         let logs = db.open_tree("logs")?;
-        Ok(Self { db, tasks, logs })
+        let names = db.open_tree("names")?;
+        Ok(Self { db, tasks, logs, names })
     }
 
     pub fn insert_task(&self, task: &Task) -> Result<()> {
         let key = task.id.as_bytes();
         let val = bincode::serialize(task)?;
         self.tasks.insert(key, val)?;
+        self.names.insert(task.name.as_bytes(), task.id.as_bytes())?;
         self.db.flush()?;
         Ok(())
     }
@@ -32,6 +35,23 @@ impl Storage {
         } else {
             Ok(None)
         }
+    }
+
+    pub fn get_task_by_name(&self, name: &str) -> Result<Option<Task>> {
+        if let Some(id_bytes) = self.names.get(name.as_bytes())? {
+            // id_bytes is IVec containing 16 bytes of UUID
+            if let Ok(uuid) = Uuid::from_slice(&id_bytes) {
+                return self.get_task(&uuid);
+            }
+        }
+        for item in self.tasks.iter() {
+            let (_k, v) = item?;
+            let t: Task = bincode::deserialize(&v)?;
+            if t.name == name {
+                return Ok(Some(t));
+            }
+        }
+        Ok(None)
     }
 
     pub fn append_log(&self, task_id: Uuid, entry: &LogEntry) -> Result<()> {

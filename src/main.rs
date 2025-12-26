@@ -25,13 +25,13 @@ enum Commands {
         retries: u32,
     },
     Run {
-        id: String,
+        name: String,
     },
     Status {
-        id: String,
+        name: String,
     },
     Logs {
-        id: String,
+        name: String,
         #[arg(long, default_value_t = 100)]
         tail: usize,
     },
@@ -52,19 +52,28 @@ async fn main() -> anyhow::Result<()> {
             storage.insert_task(&t)?;
             println!("{}", t.id);
         }
-        Commands::Run { id } => {
-            // TODO: schedule immediate run via scheduler/executor
-            println!("run {}", id);
-        }
-        Commands::Status { id } => {
-            if let Some(t) = storage.get_task(&id.parse().unwrap())? {
-                println!("{:#?}", t);
+        Commands::Run { name } => {
+            if let Some(t) = storage.get_task_by_name(&name)? {
+                // TODO: schedule immediate run via scheduler/executor
+                println!("would run task {} ({})", t.name, t.id);
+            } else {
+                eprintln!("task not found: {}", name);
             }
         }
-        Commands::Logs { id, tail } => {
-            let uuid = id.parse().unwrap();
-            let entries = storage.get_logs(uuid, tail)?;
-            for e in entries { println!("[{}] {}", e.timestamp, e.content); }
+        Commands::Status { name } => {
+            if let Some(t) = storage.get_task_by_name(&name)? {
+                println!("{:#?}", t);
+            } else {
+                eprintln!("task not found: {}", name);
+            }
+        }
+        Commands::Logs { name, tail } => {
+            if let Some(t) = storage.get_task_by_name(&name)? {
+                let entries = storage.get_logs(t.id, tail)?;
+                for e in entries { println!("[{}] {}: {}", e.timestamp, e.kind, e.content); }
+            } else {
+                eprintln!("task not found: {}", name);
+            }
         }
         Commands::Daemon { start: _ } => {
             // TODO: start scheduler loop
